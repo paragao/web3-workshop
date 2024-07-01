@@ -26,8 +26,15 @@ if [[ ${deploy_smart_contract} = true ]]; then
         
     done
     
-    alchemy_api_key=$(aws ssm get-parameter --name "/web3/aa/alchemy_api_key" --region ${CDK_DEPLOY_REGION} | jq -r ".Parameter.Value")
-    
+    deployment_params=$(aws ssm get-parameters --region ${CDK_DEPLOY_REGION} --name \
+    "/web3/aa/alchemy_api_key" \
+    "/web3/rpc_endpoint" \
+    --query "Parameters[*].{Name:Name,Value:Value}" | jq 'INDEX(.Name)'
+    )
+
+    alchemy_api_key=$(echo ${deployment_params} | jq -r '."/web3/aa/alchemy_api_key".Value')
+    rpc_endpoint=$(echo ${deployment_params} | jq -r '."/web3/rpc_endpoint".Value')
+
     while true; do
         user_op_status=$(curl -s --request POST \
             --url ${rpc_endpoint}/${alchemy_api_key} \
